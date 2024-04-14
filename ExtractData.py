@@ -48,7 +48,29 @@ def fetch_movie_genres(page=1):
         return response.json().get("genres", [])
     else:
         return None
-
+def createMovieGenre(genre):
+    query = '''
+    MERGE (n:Movie_Genre {id: $id, name: $name, description:$description, popularity:$popularity, character:$character})
+    RETURN n
+    '''
+    parameters = {
+        "id":genre["id"],
+        "name":genre["name"],
+        "description":str(genre["id"])+genre["name"],
+        "popularity":0,
+        "character": genre["name"][0]
+    }
+    with driver.session() as session:
+        # Execute the query within a session
+        result = session.run(query, parameters)
+        # Commit changes and retrieve summary
+        summary = result.consume()
+        return summary
+def createMovieGenres():
+    genres = fetch_movie_genres()
+    for genre in genres:
+        createMovieGenre(genre)
+createMovieGenres()
 def fetch_movies(page):
     url = "https://api.themoviedb.org/3/discover/movie?"
     params = {
@@ -130,6 +152,8 @@ def createDirector(crew, movie_name, budget, date):
             MERGE (k:Movie {title: $movie_name})
             MERGE (n)-[:DIRECTED_IN {budget: $budget, wage: $wage, date: $date}]->(k)
             MERGE (m:Genre {id: $gender})
+            ON CREATE SET m.popularity = 1
+            ON MATCH SET m.popularity = m.popularity + 1
             MERGE (n)-[:IS {birth:$birth, place:$place, last_update:$last_update}]->(m)
             RETURN n
             '''
@@ -162,6 +186,8 @@ def createActor(actor, movie_name, date):
     MERGE (k:Movie {title: $movie_name})
     MERGE (n)-[:ACTED_IN {role: $role, wage: $wage, date: $date}]->(k)
     MERGE (m:Genre {id: $gender})
+    ON CREATE SET m.popularity = 1
+    ON MATCH SET m.popularity = m.popularity + 1
     MERGE (n)-[:IS {birth:$birth, place:$place, last_update:$last_update}]->(m)
     RETURN n
     '''
@@ -186,6 +212,29 @@ def createActor(actor, movie_name, date):
         # Commit changes and retrieve summary
         summary = result.consume()
         return summary
+def createBelongsTo(genre, movie, movies_):
+    query = '''
+    MERGE (k:Movie {title: $movie_name})
+    MERGE (m:Movie_Genre {id: $genre})
+    ON CREATE SET m.popularity = 1
+    ON MATCH SET m.popularity = m.popularity + 1
+    MERGE (k)-[:BELONGS_TO {subgenres:$subgenres, last_update:$last_update, vote_average:$vote_average}]->(m)
+    RETURN m
+    '''
+    parameters = {
+        "id":genre,
+        "genre":genre,
+        "subgenres": movie["genre_ids"],
+        "movie_name":movie["title"],
+        "vote_average":movie["vote_average"],
+        "last_update": datetime.date.today()
+    }
+    with driver.session() as session:
+        # Execute the query within a session
+        result = session.run(query, parameters)
+        # Commit changes and retrieve summary
+        summary = result.consume()
+        return summary
 def fetch_allMovies():
     movies = fetch_movies(1)
     movies_ = None
@@ -199,7 +248,9 @@ def fetch_allMovies():
         createDirector(credits.get('crew', []),movie_name,movies_["budget"],date)
         for actor in movie['cast']:
             createActor(actor, movie_name, date)
-            
+        for genre in movie['genre_ids']:
+            createBelongsTo(genre, movie, movies_)
+createMovieGenres()          
 createSex()
 fetch_allMovies()
 # def insert_movies():
@@ -287,21 +338,21 @@ fetch_allMovies()
 #         return None
 
 
-# def fetch_now_playing_movies(page=1):
-#     url = "https://api.themoviedb.org/3/movie/now_playing"
-#     api_key = "2dec075a5d5b7fcfb11d1ba3f2ab9e9d"
-#     params = {
-#         "api_key": api_key,
-#         "language": "es",
-#          "include_video": "true",
-#          "page": page,
-#          "include_image_language": "es,en"
-#     }
-#     response = requests.get(url, params=params)
-#     if response.status_code == 200:
-#         return response.json().get("results", [])
-#     else:
-#         return None
+def fetch_now_playing_movies(page=1):
+    url = "https://api.themoviedb.org/3/movie/now_playing"
+    api_key = "2dec075a5d5b7fcfb11d1ba3f2ab9e9d"
+    params = {
+        "api_key": api_key,
+        "language": "es",
+         "include_video": "true",
+         "page": page,
+         "include_image_language": "es,en"
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        return response.json().get("results", [])
+    else:
+        return None
 
 
 # def discover_tv_shows(sort_by="popularity.desc", page=1, genre=None):

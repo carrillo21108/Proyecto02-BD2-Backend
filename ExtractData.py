@@ -43,10 +43,9 @@ def fetch_movies(page):
         return response.json().get("results", [])
     else:
         return None
-def fetch_allMovies():
+# def createMovies():
     
-    for page in range(0, 100):
-        fetch_movies(page)
+
 def fetch_movie_credits(movie_id):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}/credits?api_key=2dec075a5d5b7fcfb11d1ba3f2ab9e9d&language=es&include_image_language=es"
     response = requests.get(url)
@@ -54,7 +53,41 @@ def fetch_movie_credits(movie_id):
         return response.json()
     else:
         return None
+def createMovie(movie):
+    query = '''
+    CREATE (n:Movie {id: $id, adult: $adult, original_language:$original_language, overview:$overview, popularity:$popularity, image_paths:$image_paths, release_date:$release_date, title:$title, vote_average:$vote_average, vote_count:$vote_count})
+    RETURN n
+    '''
+    parameters = {
+        "id":movie["id"],
+        "adult":movie["adult"],
+        "original_language":movie["original_language"],
+        "overview":movie["overview"],
+        "popularity":movie["popularity"],
+        "image_paths": [movie["backdrop_path"], movie["poster_path"]],
+        "release_date": movie["release_date"],
+        "title":movie["title"],
+        "vote_average":movie["vote_average"],
+        "vote_count":movie["vote_count"]
+    }
+    with driver.session() as session:
+        # Execute the query within a session
+        result = session.run(query, parameters)
+        # Commit changes and retrieve summary
+        summary = result.consume()
+        return summary
+def fetch_allMovies():
+    movies = fetch_movies(1)
+    for movie in movies:
+        credits = fetch_movie_credits(movie['id'])
+        movie['cast'] = credits.get('cast', [])
+        print(createMovie(movie))
+        
 
+    
+    # for page in range(0, 100):
+        # print(fetch_movies(page))
+fetch_allMovies()
 # def insert_movies():
 #     total_inserted = 0
 #     page = 1

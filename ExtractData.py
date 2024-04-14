@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import random
 import requests
 import dotenv
 import os
@@ -55,7 +55,7 @@ def fetch_movie_credits(movie_id):
         return None
 def createMovie(movie):
     query = '''
-    CREATE (n:Movie {id: $id, adult: $adult, original_language:$original_language, overview:$overview, popularity:$popularity, image_paths:$image_paths, release_date:$release_date, title:$title, vote_average:$vote_average, vote_count:$vote_count})
+    MERGE (n:Movie {id: $id, adult: $adult, original_language:$original_language, overview:$overview, popularity:$popularity, image_paths:$image_paths, release_date:$release_date, title:$title, vote_average:$vote_average, vote_count:$vote_count})
     RETURN n
     '''
     parameters = {
@@ -76,12 +76,41 @@ def createMovie(movie):
         # Commit changes and retrieve summary
         summary = result.consume()
         return summary
+def createActor(actor, movie_name, date):
+    query = '''
+    MERGE (n:Actor {id: $id, name: $name, original_name: $original_name, popularity: $popularity})
+    ON CREATE SET n.profile_path = CASE WHEN $profile_path IS NULL THEN "" ELSE $profile_path END
+    ON MATCH SET n.profile_path = CASE WHEN $profile_path IS NULL THEN "" ELSE $profile_path END
+    MERGE (k:Movie {title: $movie_name})
+    MERGE (n)-[:ACTED_IN {role: $role, wage: $wage, date: $date}]->(k)
+    RETURN n
+'''
+
+    parameters = {
+        "id":actor.get("id", -1),
+        "name":actor.get("name", "None"),
+        "original_name":actor.get("original_name", "None"),
+        "profile_path":actor.get("profile_path", "None"),
+        "popularity":actor.get("popularity",-1000.0),
+        "movie_name":movie_name,
+        "role":actor.get("character", "None"),
+        "wage":random.uniform(10000, 50000000),
+        "date":date
+    }
+    with driver.session() as session:
+        # Execute the query within a session
+        result = session.run(query, parameters)
+        # Commit changes and retrieve summary
+        summary = result.consume()
+        return summary
 def fetch_allMovies():
     movies = fetch_movies(1)
     for movie in movies:
         credits = fetch_movie_credits(movie['id'])
         movie['cast'] = credits.get('cast', [])
-        print(createMovie(movie))
+        createMovie(movie)
+        for actor in movie['cast']:
+            createActor(actor, movie["title"], movie["release_date"])
         
 
     

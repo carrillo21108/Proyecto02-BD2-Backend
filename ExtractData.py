@@ -16,20 +16,6 @@ AUTH = (os.getenv("NEO4J_USERNAME"), os.getenv("NEO4J_PASSWORD"))
 with GraphDatabase.driver(URI, auth=AUTH) as driver:
     driver.verify_connectivity()
 
-
-
-# from pymongo import MongoClient
-# from pymongo.errors import BulkWriteError
-
-
-# mongo_uri = 'mongodb+srv://admin:admin@cluster0.9y482gd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
-# db_name = "filmy"
-# collection_name = "movies"
-
-# client = MongoClient(mongo_uri)
-# db = client[db_name]
-# collection = db[collection_name]
-
 def getRandomDate():
     start_dt = datetime.date.today().replace(day=1, month=1).toordinal()
     end_dt = datetime.date.today().toordinal()
@@ -67,9 +53,10 @@ def createMovieGenre(genre):
         summary = result.consume()
         return summary
 def createMovieGenres():
-    genres = fetch_movie_genres()
-    for genre in genres:
-        createMovieGenre(genre)
+    for x in range(1,10):
+        genres = fetch_movie_genres(x)
+        for genre in genres:
+            createMovieGenre(genre)
 createMovieGenres()
 def fetch_movies(page):
     url = "https://api.themoviedb.org/3/discover/movie?"
@@ -236,180 +223,22 @@ def createBelongsTo(genre, movie, movies_):
         summary = result.consume()
         return summary
 def fetch_allMovies():
-    movies = fetch_movies(1)
-    movies_ = None
-    for movie in movies:
-        movie_name = movie["title"]
-        date = movie["release_date"]
-        credits = fetch_movie_credits(movie['id'])
-        movies_ = fetch_movies_(movie['id'])
-        movie['cast'] = credits.get('cast', [])
-        createMovie(movie)
-        createDirector(credits.get('crew', []),movie_name,movies_["budget"],date)
-        for actor in movie['cast']:
-            createActor(actor, movie_name, date)
-        for genre in movie['genre_ids']:
-            createBelongsTo(genre, movie, movies_)
+    for x in range(1, 50):
+        movies = fetch_movies(x)
+        movies_ = None
+        for movie in movies:
+            movie_name = movie["title"]
+            date = movie["release_date"]
+            credits = fetch_movie_credits(movie['id'])
+            movies_ = fetch_movies_(movie['id'])
+            movie['cast'] = credits.get('cast', [])
+            createMovie(movie)
+            createDirector(credits.get('crew', []),movie_name,movies_["budget"],date)
+            for actor in movie['cast']:
+                createActor(actor, movie_name, date)
+            for genre in movie['genre_ids']:
+                createBelongsTo(genre, movie, movies_)
 createMovieGenres()          
 createSex()
 fetch_allMovies()
-# def insert_movies():
-#     total_inserted = 0
-#     page = 1
-#     while total_inserted < 10000:
-#         movies = discover_tv_shows(page)
-#         if movies:
-#             enriched_movies = []
-#             for movie in movies:
-#                 credits = fetch_movie_credits(movie['id'])
-#                 if credits:
-#                     movie['cast'] = credits.get('cast', [])
-#                     enriched_movies.append(movie)
-#             try:
-#                 if enriched_movies:
-#                     result = collection.insert_many(enriched_movies, ordered=False)
-#                     total_inserted += len(result.inserted_ids)
-#                     print(f"Inserted {len(result.inserted_ids)} movies with credits. Total inserted: {total_inserted}")
-#             except BulkWriteError as bwe:
-#                 print("BulkWriteError occurred", bwe.details)
-#                 break
-#         else:
-#             print(f"Failed to fetch movies for page {page}")
-#             break
-#         page += 1
-
-
-
-# def fetch_top_rated_movies(page):
-#     url_base = "https://api.themoviedb.org/3/movie/top_rated?"
-#     api_key = "2dec075a5d5b7fcfb11d1ba3f2ab9e9d"
-    
-#     params = {
-#         "api_key": api_key,
-#         "language": "es",
-#         "include_video": "true",
-#         "page": page,
-#         "include_image_language": "es,en"
-#     }
-    
-#     response = requests.get(url_base, params=params)
-    
-#     if response.status_code == 200:
-#         return response.json().get("results", [])
-#     else:
-#         return None
-
-# def fetch_upcoming_movies(page):
-#     url_base = "https://api.themoviedb.org/3/movie/upcoming?"
-#     api_key = "2dec075a5d5b7fcfb11d1ba3f2ab9e9d"
-    
-#     params = {
-#         "api_key": api_key,
-#         "language": "es",
-#         "include_video": "true",
-#         "page": page,
-#         "include_image_language": "es,en"
-#     }
-    
-#     response = requests.get(url_base, params=params)
-    
-#     if response.status_code == 200:
-#         return response.json().get("results", [])
-#     else:
-#         return none
-
-# def fetch_trending_movies_week(page):
-#     url = "https://api.themoviedb.org/3/trending/movie/week"
-#     api_key = "2dec075a5d5b7fcfb11d1ba3f2ab9e9d"
-    
-#     params = {
-#         "api_key": api_key,
-#         "language": "es",
-#         "include_video": "true",
-#         "page": page,
-#         "include_image_language": "es,en"
-#     }
-    
-#     response = requests.get(url, params=params)
-    
-#     if response.status_code == 200:
-#         return response.json().get("results", [])
-#     else:
-#         return None
-
-
-def fetch_now_playing_movies(page=1):
-    url = "https://api.themoviedb.org/3/movie/now_playing"
-    api_key = "2dec075a5d5b7fcfb11d1ba3f2ab9e9d"
-    params = {
-        "api_key": api_key,
-        "language": "es",
-         "include_video": "true",
-         "page": page,
-         "include_image_language": "es,en"
-    }
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        return response.json().get("results", [])
-    else:
-        return None
-
-
-# def discover_tv_shows(sort_by="popularity.desc", page=1, genre=None):
-#     url = "https://api.themoviedb.org/3/discover/tv"
-#     api_key = "2dec075a5d5b7fcfb11d1ba3f2ab9e9d"
-#     params = {
-#         "api_key": api_key,
-#         "language": "es",
-#         "sort_by": sort_by,
-#         "page": page,
-#         "with_genres": genre
-#     }
-#     response = requests.get(url, params=params)
-#     if response.status_code == 200:
-#         return response.json().get("results", [])
-#     else:
-#         return None
-
-
-# def discover_sci_fi_movies_from_2020():
-#     url = "https://api.themoviedb.org/3/discover/movie"
-#     api_key = "2dec075a5d5b7fcfb11d1ba3f2ab9e9d"
-#     params = {
-#         "api_key": api_key,
-#         "language": "es",
-#         "sort_by": "vote_average.desc",
-#         "year": 2020,
-#         "with_genres": "878",
-#         "vote_count.gte": 100
-#     }
-#     response = requests.get(url, params=params)
-#     if response.status_code == 200:
-#         return response.json().get("results", [])
-#     else:
-#         return None
-    
-
-
-       
-
-# def insert_genres():
-#     total_inserted = 0
-#     page = 1
-#     movies = fetch_movie_genres(page)
-#     if movies:
-#         try:
-#             result = collection.insert_many(movies, ordered=False)
-#             total_inserted += len(result.inserted_ids)
-#             print(f"Inserted {len(result.inserted_ids)} genres. Total inserted: {total_inserted}")
-#         except BulkWriteError as bwe:
-#             print("BulkWriteError occurred", bwe.details)
-#     else:
-#         print(f"Failed to fetch movies for page {page}")
-#     page += 1
-
-
-# insert_movies()
-
-# insert_genres()      
 driver.close()  

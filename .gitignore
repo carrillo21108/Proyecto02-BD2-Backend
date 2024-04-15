@@ -1,0 +1,26 @@
+# Dependencias
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Directorios de runtime
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Directorios de desarrollo
+.env
+.env.test
+
+# Direcctorios de IDE
+.idea
+.vscode
+*.swp
+
+# Otros
+.DS_Store
+.next

@@ -40,16 +40,19 @@ function getMovies(req,res){
 function getMoviesDetail(req, res) {
     var params = req.body;
 
-    var movies = params.movies.split(",");
-    var query = 'MATCH (m:Movie) WHERE m.id IN $movieIds RETURN m';
+    var movieIds = params.movies.split(",").map(id => parseInt(id));
+    
+    var query = 'MATCH (m:Movie) WHERE ID(m) IN $movieIds RETURN m';
 
     session
-    .run(query, { movieIds: movies })
+    .run(query, { movieIds: movieIds })
     .then(function(result) {
-        var moviesDetail = result.records.map(record => record.get('m').properties);
+        var moviesDetail = result.records.map(record => {
+            return record.get('m').properties;
+        });
 
         if (moviesDetail.length == 0) {
-            res.send({message: "Peliculas no encontradas."});
+            res.send({message: "Películas no encontradas."});
         } else {
             res.send(moviesDetail);
         }
@@ -61,18 +64,24 @@ function getMoviesDetail(req, res) {
 }
 
 
+
 function genreRecommendation(req, res) {
     var params = req.body;
-    var genres = params.genres.split(",");
-    var genresList = genres.map(genre => parseInt(genre, 10)); // Asegurarse de que son enteros
 
-    var skip = params.skip;
-    var limit = params.limit;
+    var genres = params.genres.split(",");
+    var genresList = genres.map(genre => parseInt(genre));
+
+    var skip = parseInt(params.skip);
+    var limit = parseInt(params.limit);
 
     var query = `
-    MATCH (m:Movie)
-    WHERE any(genre IN m.genre_ids WHERE genre IN $genresList)
-    RETURN m AS Movie
+    MATCH (m:Movie)-[:BELONGS_TO]->(g:Movie_Genre)
+    WHERE g.id IN $genresList
+    WITH m
+    MATCH (m)-[:BELONGS_TO]->(g2:Movie_Genre)
+    WITH m, collect(g2.id) AS genres
+    RETURN m AS Movie, genres
+    ORDER BY m.original_title
     SKIP toInteger($skip)
     LIMIT toInteger($limit)
     `;
@@ -80,10 +89,15 @@ function genreRecommendation(req, res) {
     session
     .run(query, { genresList: genresList, skip: skip, limit: limit })
     .then(function(result) {
-        var moviesDetail = result.records.map(record => record.get('Movie').properties);
+        var moviesDetail = result.records.map(record => {
+            return {
+                movie: record.get('Movie').properties,
+                genres: record.get('genres')
+            };
+        });
 
-        if (moviesDetail.length == 0) {
-            res.send({message: "Peliculas no encontradas."});
+        if (moviesDetail.length === 0) {
+            res.send({message: "Películas no encontradas."});
         } else {
             res.send(moviesDetail);
         }
@@ -93,8 +107,6 @@ function genreRecommendation(req, res) {
         res.status(500).send({message: 'Error general'});
     });
 }
-
-
 
 
 function userRecommendation(req, res) {
@@ -106,11 +118,11 @@ function userRecommendation(req, res) {
     var limit = parseInt(params.limit);
 
     var query = `
-    MATCH (u:User)-[:LIKES_GENRE]->(g:Genre)
-    WHERE g.id IN $genresList AND NOT u.credentials.mail = $mail
-    WITH u, collect(g) as likedGenres
-    UNWIND u.likedMovies AS movieId
-    RETURN DISTINCT movieId AS MovieID
+    MATCH (u:User)-[:LIKES]->(m:Movie)-[:BELONGS_TO]->(mg:Movie_Genre)
+    WHERE mg.id IN $genresList AND NOT u.credentials.mail = $mail
+    WITH DISTINCT m AS movie
+    RETURN movie
+    ORDER BY movie.popularity DESC
     SKIP toInteger($skip)
     LIMIT toInteger($limit)
     `;
@@ -118,10 +130,12 @@ function userRecommendation(req, res) {
     session
     .run(query, { genresList: genresList, mail: mail, skip: skip, limit: limit })
     .then(function(result) {
-        var recommendedMovies = result.records.map(record => record.get('MovieID'));
+        var recommendedMovies = result.records.map(record => {
+            return record.get('movie').properties;
+        });
 
         if (recommendedMovies.length == 0) {
-            res.send({message: "Peliculas no encontradas."});
+            res.send({message: "Películas no encontradas."});
         } else {
             res.send(recommendedMovies);
         }
@@ -131,6 +145,7 @@ function userRecommendation(req, res) {
         res.status(500).send({message: 'Error general'});
     });
 }
+
 
 
 function popularRecommendation(req, res) {

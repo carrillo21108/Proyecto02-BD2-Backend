@@ -15,5 +15,8 @@ api.post('/getLikeUserMovie',userController.getLikeUserMovie);
 //  api.post('/getLikesGenre',userController.getLikesGenre);
 api.post('/updateUser',userController.updateUser);
 api.post('/deleteUser',userController.deleteUser); //Nuevo
+api.post('/wantToSeeMovie',userController.wantToSeeMovie);
+api.post('/notWantToSee',userController.notWantToSee);
+api.post('/getWantToSee',userController.getWantToSee);
 
 module.exports = api;

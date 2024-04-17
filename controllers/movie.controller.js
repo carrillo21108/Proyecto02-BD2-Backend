@@ -211,9 +211,6 @@ function releaseRecommendation(req, res) {
     });
 }
 
-
-
-
 module.exports = {
     getMovies,
     getMoviesCount,

@@ -7,6 +7,7 @@ var app = express();
 
 var userRoutes = require('./routes/user.route');
 var movieRoutes = require('./routes/movie.route');
+var movieGenreRoutes = require('./routes/movie_genre.route');
 
 //View Engine
 
@@ -32,5 +33,6 @@ console.log('Servidor express corriendo: ', port);
 
 app.use(userRoutes);
 app.use(movieRoutes);
+app.use(movieGenreRoutes);
 
 module.exports = app;

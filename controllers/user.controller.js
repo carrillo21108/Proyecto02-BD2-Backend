@@ -282,6 +282,156 @@ function dislikeMovie(req, res) {
     });
 }
 
+function getWantToSee(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User { mail: $mail })-[l:WANT_TO_SEE]->(m:Movie {id: toInteger($movieId)})
+    RETURN m
+    `;
+
+    session
+    .run(query, { mail: params.mail, movieId: params.movieId })
+    .then(function(result) {
+        if (result.records.length === 0) {
+            res.send({message: "Pelicula que no quiere ver el usuario."});
+        } else {
+            res.send({message: "Pelicula que quiere ver el usuario."});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
+function wantToSeeMovie(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User { mail: $mail }), (m:Movie {id: toInteger($movieId)})
+    MERGE (u)-[r:WANT_TO_SEE]->(m)
+    RETURN u, m, r
+    `;
+
+    session
+    .run(query, { mail: params.mail, movieId: params.movieId })
+    .then(function(result) {
+        if (result.records.length === 0) {
+            res.send({message: 'Relacion WANT_TO_SEE no creada.'});
+        } else {
+            // Puedes elegir devolver toda la relación o simplemente una confirmación
+            var relationship = result.records[0].get('r');
+            res.send({message: 'Relacion WANT_TO_SEE creada con éxito.', relationship: relationship});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
+function notWantToSee(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User {mail: $mail })-[r:WANT_TO_SEE]->(m:Movie {id: toInteger($movieId)})
+    DELETE r
+    RETURN u, m
+    `;
+
+    session
+    .run(query, { mail: params.mail, movieId: params.movieId })
+    .then(function(result) {
+        // No hay registros, eso significa que no se encontró la relación para eliminar
+        if (result.records.length === 0) {
+            res.send({message: 'Relacion WANT_TO_SEE no eliminada.'});
+        } else {
+            // Si hay registros, eso significa que retorna un registro
+            res.send({message: 'Relacion WANT_TO_SEE eliminada con éxito.'});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
+function getHasSeen(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User { mail: $mail })-[l:HAS_SEEN]->(m:Movie {id: toInteger($movieId)})
+    RETURN m
+    `;
+
+    session
+    .run(query, { mail: params.mail, movieId: params.movieId })
+    .then(function(result) {
+        if (result.records.length === 0) {
+            res.send({message: "Pelicula que no ha visto el usuario."});
+        } else {
+            res.send({message: "Pelicula que ha visto el usuario."});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
+function hasSeenMovie(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User { mail: $mail }), (m:Movie {id: toInteger($movieId)})
+    MERGE (u)-[r:HAS_SEEN]->(m)
+    RETURN u, m, r
+    `;
+
+    session
+    .run(query, { mail: params.mail, movieId: params.movieId })
+    .then(function(result) {
+        if (result.records.length === 0) {
+            res.send({message: 'Relacion HAS_SEEN no creada.'});
+        } else {
+            // Puedes elegir devolver toda la relación o simplemente una confirmación
+            var relationship = result.records[0].get('r');
+            res.send({message: 'Relacion HAS_SEEN creada con éxito.', relationship: relationship});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
+function notHasSeen(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User {mail: $mail })-[r:HAS_SEEN]->(m:Movie {id: toInteger($movieId)})
+    DELETE r
+    RETURN u, m
+    `;
+
+    session
+    .run(query, { mail: params.mail, movieId: params.movieId })
+    .then(function(result) {
+        // No hay registros, eso significa que no se encontró la relación para eliminar
+        if (result.records.length === 0) {
+            res.send({message: 'Relacion HAS_SEEN no eliminada.'});
+        } else {
+            // Si hay registros, eso significa que retorna un registro
+            res.send({message: 'Relacion HAS_SEEN eliminada con éxito.'});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
 module.exports = {
     login,
     create,
@@ -292,5 +442,11 @@ module.exports = {
     dislikeGenre,
     getLikeUserMovie,
     likeMovie,
-    dislikeMovie
+    dislikeMovie,
+    wantToSeeMovie,
+    notWantToSee,
+    getWantToSee,
+    getHasSeen,
+    hasSeenMovie,
+    notHasSeen
 }

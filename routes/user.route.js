@@ -15,5 +15,10 @@ api.post('/getLikeUserMovie',userController.getLikeUserMovie);
 //  api.post('/getLikesGenre',userController.getLikesGenre);
 api.post('/updateUser',userController.updateUser);
 api.post('/deleteUser',userController.deleteUser); //Nuevo
-
+api.post('/wantToSeeMovie',userController.wantToSeeMovie);
+api.post('/notWantToSee',userController.notWantToSee);
+api.post('/getWantToSee',userController.getWantToSee);
+api.post('/hasSeen',userController.hasSeenMovie);
+api.post('/notHasSeen',userController.notHasSeen);
+api.post('/getHasSeen',userController.getHasSeen);
 module.exports = api;

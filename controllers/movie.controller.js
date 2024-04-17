@@ -65,49 +65,38 @@ function getMoviesDetail(req, res) {
 
 
 
-function genreRecommendation(req, res) {
+function genreRecommendation(req,res){
+    var resRecord = [];
     var params = req.body;
-
-    var genres = params.genres.split(",");
-    var genresList = genres.map(genre => parseInt(genre));
 
     var skip = parseInt(params.skip);
     var limit = parseInt(params.limit);
+    var mail = params.mail;
 
-    var query = `
-    MATCH (m:Movie)-[:BELONGS_TO]->(g:Movie_Genre)
-    WHERE g.id IN $genresList
-    WITH m
-    MATCH (m)-[:BELONGS_TO]->(g2:Movie_Genre)
-    WITH m, collect(g2.id) AS genres
-    RETURN m AS Movie, genres
-    ORDER BY m.original_title
-    SKIP toInteger($skip)
-    LIMIT toInteger($limit)
-    `;
+    var query = `MATCH (a:User)-[:FAVORITE]->(genre)<-[:BELONGS_TO]-(b:Movie) 
+                WHERE a.mail=$mail 
+                RETURN b 
+                SKIP toInteger($skip) 
+                LIMIT toInteger($limit)`;
 
     session
-    .run(query, { genresList: genresList, skip: skip, limit: limit })
-    .then(function(result) {
-        var moviesDetail = result.records.map(record => {
-            return {
-                movie: record.get('Movie').properties,
-                genres: record.get('genres')
-            };
+    .run(query, { mail: mail, skip: skip, limit: limit })
+    .then(function(result){
+        result.records.forEach(function(record){
+            resRecord.push(record._fields[0].properties);
         });
-
-        if (moviesDetail.length === 0) {
-            res.send({message: "Películas no encontradas."});
-        } else {
-            res.send(moviesDetail);
+        
+        if(resRecord.length==0){
+            res.send({message:"Peliculas no encontradas."});
+        }else{
+            res.send(resRecord);
         }
     })
-    .catch(function(err) {
+    .catch(function(err){
         console.log(err);
-        res.status(500).send({message: 'Error general'});
+        res.status(500).send({message:'Error general'});
     });
 }
-
 
 function userRecommendation(req, res) {
     var params = req.body;
@@ -187,7 +176,7 @@ function releaseRecommendation(req, res) {
     var query = `
     MATCH (m:Movie)
     WHERE m.vote_average >= 5 AND m.vote_count >= 100
-    AND m.release_date >= '2024-01-01' AND m.release_date <= '2024-04-15'
+    AND m.release_date >= '2023-12-01' AND m.release_date <= '2024-04-15'
     RETURN m AS Movie
     ORDER BY m.release_date DESC
     SKIP toInteger($skip)

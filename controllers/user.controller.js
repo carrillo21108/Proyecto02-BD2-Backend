@@ -18,7 +18,7 @@ function login(req,res){
         });
         
         if(resRecord.length==0){
-            res.status(404).send({message:"Contraseña y/o correo electrónico incorrecto."});
+            res.send({message:"Contraseña y/o correo electrónico incorrecto."});
         }else{
             res.send(resRecord);
         }
@@ -60,7 +60,7 @@ function create(req,res){
         if (result.records.length > 0) {
             res.send({ message: 'Usuario agregado con éxito a la DB y vinculado al género.' });
         } else {
-            res.status(404).send({ message: 'Género no encontrado.' });
+            res.send({ message: 'Género no encontrado.' });
         }
     })
     .catch(function(err){
@@ -87,7 +87,7 @@ function profile(req,res){
         });
 
         if(resRecord.length==0){
-            res.status(404).send({message:"Perfil de usuario no encontrado."});
+            res.send({message:"Perfil de usuario no encontrado."});
         }else{
             res.send(resRecord[0]);
         }
@@ -149,7 +149,7 @@ function deleteUser(req, res) {
             if (result.summary.counters.containsUpdates()) {
                 res.send({ message: 'Usuario eliminado con éxito de la DB y desvinculado del género.' });
             } else {
-                res.status(404).send({ message: 'Usuario no encontrado o no está vinculado a ningún género.' });
+                res.send({ message: 'Usuario no encontrado o no está vinculado a ningún género.' });
             }
         })
         .catch(function(err) {
@@ -158,11 +158,64 @@ function deleteUser(req, res) {
         });
 }
 
+function likeGenre(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User {mail: $mail }), (g:Movie_Genre {id: $genreId})
+    MERGE (u)-[f:FAVORITE]->(g)
+    RETURN u, f, g
+    `;
+
+    session
+    .run(query, { mail: params.mail, genreId: parseInt(params.genreId) })
+    .then(function(result) {
+        if (result.records.length === 0) {
+            res.send({message: 'Relación FAVORITE no creada.'});
+        } else {
+            var favorite = result.records[0].get('f');
+            res.send({message: 'Relación FAVORITE creada con éxito.', favorite: favorite});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
+function dislikeGenre(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User { mail: $mail })-[f:FAVORITE]->(g:Movie_Genre {id: $genreId})
+    DELETE f
+    RETURN u, g
+    `;
+
+    session
+    .run(query, { mail: params.mail, genreId: parseInt(params.genreId) })
+    .then(function(result) {
+        if (result.records.length === 0) {
+            res.send({message: 'Relación FAVORITE no eliminada.'});
+        } else {
+            res.send({message: 'Relación FAVORITE eliminada con éxito.'});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
+
+
 
 module.exports = {
     login,
     create,
     profile,
     updateUser,
-    deleteUser
+    deleteUser,
+    likeGenre,
+    dislikeGenre
 }

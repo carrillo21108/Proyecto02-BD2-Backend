@@ -10,7 +10,7 @@ var movieRoutes = require('./routes/movie.route');
 
 //View Engine
 
-var port = 3800;
+var port = 3000;
 
 app.set('views', path.join(__dirname,'views'));
 app.set('view engine','ejs');

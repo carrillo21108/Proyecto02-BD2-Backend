@@ -1,5 +1,6 @@
 var session = require('../connection');
-
+const Chartist    = require('chartist');
+const chartistSvg = require('chartist-svg');
 function login(req,res){
     var params = req.body;
     var query = `
@@ -466,7 +467,6 @@ function getAvgMoviesVotesUser(req, res) {
     });
 }
 function getGenreCount(req, res) {
-    var params = req.body;
     var query = `
     MATCH (k:User|Actor|Director)-[:IS]->(g:Genre)
     WITH g.name AS genero, count(g) AS genreCount
@@ -474,16 +474,28 @@ function getGenreCount(req, res) {
     `;
     
     session
-    .run(query, { mail: params.mail})
+    .run(query)
     .then(function(result) {
-        res.send({avgUserVotes: result.records[0].get('avgUserVotes')});
+        
+        var data = {
+            title: 'Genre Chart',
+            subtitle: 'Distribution of genres',
+            labels: result.records.map((genre)=>genre.get("genero")),
+            series: result.records.map((genre)=>genre.get("genreCount").low)
+        };
+        const options = {
+            Width:1000,
+            chartPadding: {
+              right: 40
+            }
+          }
+        chartistSvg('bar', data, options).then(svg => res.send(svg));
     })
     .catch(function(err) {
         console.log(err);
         res.status(500).send({message: 'Error general'});
     });
 }
-// function getGenrePie(REQ, )
 module.exports = {
     login,
     create,
@@ -502,5 +514,6 @@ module.exports = {
     hasSeenMovie,
     notHasSeen,
     getHowManyMoviesLikedUser,
-    getAvgMoviesVotesUser
+    getAvgMoviesVotesUser,
+    getGenreCount
 }

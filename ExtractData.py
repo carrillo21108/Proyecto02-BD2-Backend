@@ -122,12 +122,15 @@ def createMovie(movie):
         "vote_average":movie["vote_average"],
         "vote_count":movie["vote_count"]
     }
-    with driver.session() as session:
-        # Execute the query within a session
-        result = session.run(query, parameters)
-        # Commit changes and retrieve summary
-        summary = result.consume()
-        return summary
+    try:
+        with driver.session() as session:
+            # Execute the query within a session
+            result = session.run(query, parameters)
+            # Commit changes and retrieve summary
+            summary = result.consume()
+            return summary
+    except:
+        pass
     
 def createDirector(crew, movie_name, budget, date):
     for crew_member in crew:
@@ -224,6 +227,7 @@ def createBelongsTo(genre, movie, movies_):
         return summary
 def fetch_allMovies():
     for x in range(1, 50):
+        print("Movie page: "+str(x))
         movies = fetch_movies(x)
         movies_ = None
         for movie in movies:
@@ -238,7 +242,7 @@ def fetch_allMovies():
                 createActor(actor, movie_name, date)
             for genre in movie['genre_ids']:
                 createBelongsTo(genre, movie, movies_)
-createMovieGenres()          
-createSex()
+# createMovieGenres()          
+# createSex()
 fetch_allMovies()
 driver.close()  

@@ -144,7 +144,6 @@ function deleteUser(req, res) {
             mail: params.mail
         })
         .then(function(result) {
-            console.log(result);
             // Usamos `containsUpdates()` para comprobar si se realizaron cambios en la base de datos.
             if (result.summary.counters.containsUpdates()) {
                 res.send({ message: 'Usuario eliminado con éxito de la DB y desvinculado del género.' });
@@ -208,7 +207,80 @@ function dislikeGenre(req, res) {
 }
 
 
+function getLikeUserMovie(req, res) {
+    var params = req.body;
 
+    var query = `
+    MATCH (u:User { mail: $mail })-[l:LIKES]->(m:Movie {id: toInteger($movieId)})
+    RETURN m
+    `;
+
+    session
+    .run(query, { mail: params.mail, movieId: params.movieId })
+    .then(function(result) {
+        if (result.records.length === 0) {
+            res.send({message: "Película sin like de usuario."});
+        } else {
+            res.send({message: "Película con like de usuario."});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
+function likeMovie(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User { mail: $mail }), (m:Movie {id: toInteger($movieId)})
+    MERGE (u)-[r:LIKES]->(m)
+    RETURN u, m, r
+    `;
+
+    session
+    .run(query, { mail: params.mail, movieId: params.movieId })
+    .then(function(result) {
+        if (result.records.length === 0) {
+            res.send({message: 'Relación LIKES no creada.'});
+        } else {
+            // Puedes elegir devolver toda la relación o simplemente una confirmación
+            var relationship = result.records[0].get('r');
+            res.send({message: 'Relación LIKES creada con éxito.', relationship: relationship});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
+function dislikeMovie(req, res) {
+    var params = req.body;
+
+    var query = `
+    MATCH (u:User {mail: $mail })-[r:LIKES]->(m:Movie {id: toInteger($movieId)})
+    DELETE r
+    RETURN u, m
+    `;
+
+    session
+    .run(query, { mail: params.mail, movieId: params.movieId })
+    .then(function(result) {
+        // La eliminación fue exitosa, pero como eliminamos la relación, no habrá registros que devolver
+        if (result.records.length === 0) {
+            res.send({message: 'Relación LIKES eliminada con éxito.'});
+        } else {
+            // Si hay registros, eso significa que no se encontró la relación para eliminar
+            res.send({message: 'Relación LIKES no eliminada.'});
+        }
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
 
 module.exports = {
     login,
@@ -217,5 +289,8 @@ module.exports = {
     updateUser,
     deleteUser,
     likeGenre,
-    dislikeGenre
+    dislikeGenre,
+    getLikeUserMovie,
+    likeMovie,
+    dislikeMovie
 }

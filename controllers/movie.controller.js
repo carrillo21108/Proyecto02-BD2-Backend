@@ -74,8 +74,9 @@ function genreRecommendation(req,res){
     var mail = params.mail;
 
     var query = `MATCH (a:User)-[:FAVORITE]->(genre)<-[:BELONGS_TO]-(b:Movie) 
-                WHERE a.mail=$mail 
-                RETURN b 
+                WHERE a.mail=$mail AND b.vote_average >= 5 AND b.vote_count >= 100
+                RETURN DISTINCT b
+                ORDER BY rand()
                 SKIP toInteger($skip) 
                 LIMIT toInteger($limit)`;
 
@@ -100,24 +101,21 @@ function genreRecommendation(req,res){
 
 function userRecommendation(req, res) {
     var params = req.body;
-    var genres = params.genres.split(",");
-    var genresList = genres.map(genre => parseInt(genre));
     var mail = params.mail;
     var skip = parseInt(params.skip);
     var limit = parseInt(params.limit);
 
     var query = `
-    MATCH (u:User)-[:LIKES]->(m:Movie)-[:BELONGS_TO]->(mg:Movie_Genre)
-    WHERE mg.id IN $genresList AND NOT u.credentials.mail = $mail
-    WITH DISTINCT m AS movie
-    RETURN movie
+    MATCH (u:User)-[:FAVORITE]->(g:Movie_Genre)<-[:FAVORITE]-(b:User)-[:LIKES]->(movie:Movie)
+    WHERE u.mail = $mail AND u.mail <> b.mail
+    RETURN DISTINCT movie
     ORDER BY movie.popularity DESC
     SKIP toInteger($skip)
     LIMIT toInteger($limit)
-    `;
+`;
 
     session
-    .run(query, { genresList: genresList, mail: mail, skip: skip, limit: limit })
+    .run(query, { mail: mail, skip: skip, limit: limit })
     .then(function(result) {
         var recommendedMovies = result.records.map(record => {
             return record.get('movie').properties;

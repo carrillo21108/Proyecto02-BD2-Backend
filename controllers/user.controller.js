@@ -219,9 +219,9 @@ function getLikeUserMovie(req, res) {
     .run(query, { mail: params.mail, movieId: params.movieId })
     .then(function(result) {
         if (result.records.length === 0) {
-            res.send({message: "Película sin like de usuario."});
+            res.send({message: "Pelicula sin like de usuario."});
         } else {
-            res.send({message: "Película con like de usuario."});
+            res.send({message: "Pelicula con like de usuario."});
         }
     })
     .catch(function(err) {

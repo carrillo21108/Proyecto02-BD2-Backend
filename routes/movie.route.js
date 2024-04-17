@@ -10,5 +10,6 @@ api.post('/popularRecommendation',movieController.popularRecommendation);
 api.post('/releaseRecommendation',movieController.releaseRecommendation);
 api.get('/getMoviesCount',movieController.getMoviesCount);
 api.post('/getMoviesDetail',movieController.getMoviesDetail);
+api.post('/getMovieCast',movieController.getMovieCast);
 
 module.exports = api;

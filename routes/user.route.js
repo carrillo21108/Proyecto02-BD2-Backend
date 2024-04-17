@@ -21,4 +21,6 @@ api.post('/getWantToSee',userController.getWantToSee);
 api.post('/hasSeen',userController.hasSeenMovie);
 api.post('/notHasSeen',userController.notHasSeen);
 api.post('/getHasSeen',userController.getHasSeen);
+api.post('/getHowManyMoviesLikedUser',userController.getHowManyMoviesLikedUser);
+api.post('/getHowManyMoviesAvgUser',userController.getAvgMoviesVotesUser);
 module.exports = api;

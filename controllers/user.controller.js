@@ -432,6 +432,39 @@ function notHasSeen(req, res) {
     });
 }
 
+function getHowManyMoviesLikedUser(req, res) {
+    var params = req.body;
+    var query = `
+    MATCH (p:User{mail:$mail})-[:LIKES]->(m:Movie)
+    return count(*) As movieCount
+    `;
+    session
+    .run(query, { mail: params.mail})
+    .then(function(result) {
+        res.send({movies_liked: result.records[0].get('movieCount').low});
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+function getAvgMoviesVotesUser(req, res) {
+    var params = req.body;
+    var query = `
+    MATCH (p:User{mail:$mail})-[:LIKES]->(m:Movie)
+    return avg(m.vote_average) as avgUserVotes
+    `;
+    
+    session
+    .run(query, { mail: params.mail})
+    .then(function(result) {
+        res.send({avgUserVotes: result.records[0].get('avgUserVotes')});
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
 module.exports = {
     login,
     create,
@@ -448,5 +481,7 @@ module.exports = {
     getWantToSee,
     getHasSeen,
     hasSeenMovie,
-    notHasSeen
+    notHasSeen,
+    getHowManyMoviesLikedUser,
+    getAvgMoviesVotesUser
 }

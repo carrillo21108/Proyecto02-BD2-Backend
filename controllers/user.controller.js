@@ -465,6 +465,25 @@ function getAvgMoviesVotesUser(req, res) {
         res.status(500).send({message: 'Error general'});
     });
 }
+function getGenreCount(req, res) {
+    var params = req.body;
+    var query = `
+    MATCH (k:User|Actor|Director)-[:IS]->(g:Genre)
+    WITH g.name AS genero, count(g) AS genreCount
+    RETURN genero, genreCount;
+    `;
+    
+    session
+    .run(query, { mail: params.mail})
+    .then(function(result) {
+        res.send({avgUserVotes: result.records[0].get('avgUserVotes')});
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+// function getGenrePie(REQ, )
 module.exports = {
     login,
     create,

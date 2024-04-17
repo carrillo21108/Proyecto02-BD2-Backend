@@ -142,7 +142,7 @@ function popularRecommendation(req, res) {
 
     var query = `
     MATCH (m:Movie)
-    WHERE m.vote_average >= 8 AND m.vote_count >= 500
+    WHERE m.vote_average >= 6 AND m.vote_count >= 500
     RETURN m AS Movie
     ORDER BY m.popularity DESC
     SKIP toInteger($skip)
@@ -198,6 +198,34 @@ function releaseRecommendation(req, res) {
     });
 }
 
+function getMovieCast(req,res){
+    var params = req.body;
+    var resRecord = [];
+
+    var query = `
+    MATCH (n:Actor)-[r:ACTED_IN]->(m:Movie{id:$movieId})
+    RETURN n
+    `;
+
+    session
+    .run(query,{movieId:parseInt(params.movieId)})
+    .then(function(result){
+        result.records.forEach(function(record){
+            resRecord.push(record._fields[0].properties);
+        });
+        
+        if(resRecord.length==0){
+            res.send({message:"Actores no encontrados."});
+        }else{
+            res.send(resRecord);
+        }
+    })
+    .catch(function(err){
+        console.log(err);
+        res.status(500).send({message:'Error general'});
+    });
+}
+
 module.exports = {
     getMovies,
     getMoviesCount,
@@ -205,5 +233,6 @@ module.exports = {
     releaseRecommendation,
     genreRecommendation,
     userRecommendation,
-    getMoviesDetail
+    getMoviesDetail,
+    getMovieCast
 }

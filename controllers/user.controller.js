@@ -519,7 +519,10 @@ function getMovieGenreCount(req, res) {
               right: 40
             }
           }
-        chartistSvg('bar', data, options).then(svg => res.send(svg));
+        
+        chartistSvg('bar', data, options).then(svg => {
+            const str = new String(svg);
+            res.send({"text":str.toString()})});
     })
     .catch(function(err) {
         console.log(err);

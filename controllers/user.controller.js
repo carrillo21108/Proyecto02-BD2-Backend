@@ -163,19 +163,35 @@ function likeGenre(req, res) {
 
     var query = `
     MATCH (u:User {mail: $mail }), (g:Movie_Genre {id: $genreId})
-    MERGE (u)-[f:FAVORITE]->(g)
+    MERGE (u)-[f:FAVORITE{reason:"Liked the genre", date:$date, subgenres:$subgenre}]->(g)
     RETURN u, f, g
     `;
-
-    session
-    .run(query, { mail: params.mail, genreId: parseInt(params.genreId) })
-    .then(function(result) {
-        if (result.records.length === 0) {
-            res.send({message: 'Relación FAVORITE no creada.'});
-        } else {
-            var favorite = result.records[0].get('f');
-            res.send({message: 'Relación FAVORITE creada con éxito.', favorite: favorite});
+    const date = new Date();
+    var query1 = `
+    MATCH (n:Movie_Genre), (n1:Movie_Genre {name: "Terror"})
+    WITH collect(n.name) AS genres, n1.name AS terror_genre
+    UNWIND genres AS genre
+    RETURN terror_genre + '-' + genre AS genre_combination;
+    `
+    session.run(query1).then(function(result1){
+        let subgenres = [];
+        for (let x = 0; x < result1.records.length; x++){
+            subgenres.push(result1.records[x].get("genre_combination"))
         }
+        session
+        .run(query, { mail: params.mail, genreId: parseInt(params.genreId), date: `${date.getDate()}-${date.getMonth()}-${date.getFullYear()}`, subgenre: subgenres })
+        .then(function(result) {
+            if (result.records.length === 0) {
+                res.send({message: 'Relación FAVORITE no creada.'});
+            } else {
+                var favorite = result.records[0].get('f');
+                res.send({message: 'Relación FAVORITE creada con éxito.', favorite: favorite});
+            }
+        })
+        .catch(function(err) {
+            console.log(err);
+            res.status(500).send({message: 'Error general'});
+        });
     })
     .catch(function(err) {
         console.log(err);

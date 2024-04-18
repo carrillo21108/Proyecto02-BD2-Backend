@@ -311,12 +311,12 @@ function wantToSeeMovie(req, res) {
 
     var query = `
     MATCH (u:User { mail: $mail }), (m:Movie {id: toInteger($movieId)})
-    MERGE (u)-[r:WANT_TO_SEE]->(m)
+    MERGE (u)-[r:WANT_TO_SEE{reminder:True, language:m.original_language, date:$date}]->(m)
     RETURN u, m, r
     `;
-
+    const date = new Date();
     session
-    .run(query, { mail: params.mail, movieId: params.movieId })
+    .run(query, { mail: params.mail, movieId: params.movieId,  date: `${date.getDate()+10}-${date.getMonth()}-${date.getFullYear()}` })
     .then(function(result) {
         if (result.records.length === 0) {
             res.send({message: 'Relacion WANT_TO_SEE no creada.'});
@@ -386,12 +386,12 @@ function hasSeenMovie(req, res) {
 
     var query = `
     MATCH (u:User { mail: $mail }), (m:Movie {id: toInteger($movieId)})
-    MERGE (u)-[r:HAS_SEEN]->(m)
+    MERGE (u)-[r:HAS_SEEN{times_seen:1, language:m.original_language, last_seen:$date}]->(m)
     RETURN u, m, r
     `;
-
+    const date = new Date();
     session
-    .run(query, { mail: params.mail, movieId: params.movieId })
+    .run(query, { mail: params.mail, movieId: params.movieId, date:  `${date.getDate()}-${date.getMonth()}-${date.getFullYear()}`})
     .then(function(result) {
         if (result.records.length === 0) {
             res.send({message: 'Relacion HAS_SEEN no creada.'});
@@ -519,10 +519,7 @@ function getMovieGenreCount(req, res) {
               right: 40
             }
           }
-        
-        chartistSvg('bar', data, options).then(svg => {
-            const str = new String(svg);
-            res.send({"text":str.toString()})});
+        chartistSvg('bar', data, options).then(svg => res.send(svg));
     })
     .catch(function(err) {
         console.log(err);

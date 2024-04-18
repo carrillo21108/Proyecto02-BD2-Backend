@@ -496,6 +496,37 @@ function getGenreCount(req, res) {
         res.status(500).send({message: 'Error general'});
     });
 }
+function getMovieGenreCount(req, res) {
+    var query = `
+    MATCH (k:User)-[:FAVORITE]->(g:Movie_Genre)
+    WITH g.name AS genero, count(g) AS genreCount
+    RETURN genero, genreCount;
+    `;
+    
+    session
+    .run(query)
+    .then(function(result) {
+        
+        var data = {
+            title: 'Movie Genre Chart',
+            subtitle: 'Distribution of Movie Genres',
+            labels: result.records.map((genre)=>genre.get("genero")),
+            series: result.records.map((genre)=>genre.get("genreCount").low)
+        };
+        const options = {
+            Width:1000,
+            chartPadding: {
+              right: 40
+            }
+          }
+        chartistSvg('bar', data, options).then(svg => res.send(svg));
+    })
+    .catch(function(err) {
+        console.log(err);
+        res.status(500).send({message: 'Error general'});
+    });
+}
+
 module.exports = {
     login,
     create,
@@ -515,5 +546,6 @@ module.exports = {
     notHasSeen,
     getHowManyMoviesLikedUser,
     getAvgMoviesVotesUser,
-    getGenreCount
+    getGenreCount,
+    getMovieGenreCount
 }

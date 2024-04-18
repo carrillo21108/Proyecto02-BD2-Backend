@@ -236,12 +236,12 @@ function likeMovie(req, res) {
 
     var query = `
     MATCH (u:User { mail: $mail }), (m:Movie {id: toInteger($movieId)})
-    MERGE (u)-[r:LIKES]->(m)
+    MERGE (u)-[r:LIKES{times_seen:1, reason:"Me gusta mucho", date:$date}]->(m)
     RETURN u, m, r
     `;
-
+    const date = new Date();
     session
-    .run(query, { mail: params.mail, movieId: params.movieId })
+    .run(query, { mail: params.mail, movieId: params.movieId, date: `${date.getDate()}-${date.getMonth()}-${date.getFullYear()}`})
     .then(function(result) {
         if (result.records.length === 0) {
             res.send({message: 'Relación LIKES no creada.'});
